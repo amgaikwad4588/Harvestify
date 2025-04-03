@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Debug</title>
+</head>
+<body>
+    <h1>Image Debug Information</h1>
+    <table border="1">
+        <tr>
+            <th>Tool Name</th>
+            <th>Database Path</th>
+            <th>Full Path</th>
+            <th>Exists</th>
+        </tr>
+        {% for tool in tools %}
+        <tr>
+            <td>{{ tool.name }}</td>
+            <td>{{ tool.db_path }}</td>
+            <td>{{ tool.full_path }}</td>
+            <td style="color: {% if tool.exists %}green{% else %}red{% endif %}">
+                {{ tool.exists }}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
