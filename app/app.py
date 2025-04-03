@@ -8,6 +8,7 @@ from utils.fertilizer import fertilizer_dic
 import requests
 import config
 import pickle
+from flask_session import Session
 import io
 import torch
 from torchvision import transforms
@@ -17,6 +18,7 @@ from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 import os
 import uuid
+from flask import Flask, request, jsonify, session, render_template
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 # ==============================================================================================
 
@@ -36,7 +38,8 @@ if not os.path.exists(UPLOAD_FOLDER):
 # Initialize database
 db = SQLAlchemy(app)
 with app.app_context():
-    db.create_all()  # Ensure the tables exist
+    db.create_all()  # Ensure tables exist before querying
+
 
 class Crop(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -107,7 +110,8 @@ crop_recommendation_model = pickle.load(
 
 # Custom functions for calculations
 
-
+app.config["SESSION_TYPE"] = "filesystem"  # Store sessions in files
+Session(app)
 def weather_fetch(city_name):
     """
     Fetch and returns the temperature and humidity of a city
@@ -226,9 +230,82 @@ def delete_crop(crop_id):
     except Exception as e:
         return jsonify({"success": False, "message": f"Error deleting crop: {e}"})
 
+#cart page 
+
+
+
+app.secret_key = "supersecretkey"  # Needed for session management
+
+# Initialize cart in session
+@app.route("/add_to_cart", methods=["POST"])
+def add_to_cart():
+    data = request.get_json()
+    crop_id = data["id"]
+    crop_name = data["name"]
+    crop_price = data["price"]
+
+    if "cart" not in session:
+        session["cart"] = []
+
+    # Check if item already exists
+    for item in session["cart"]:
+        if str(item["id"]) == str(crop_id):
+            item["quantity"] += 1  # Increase quantity
+            session.modified = True
+            return jsonify({"success": True, "message": f"{crop_name} quantity updated!"})
+
+    # Add new item with quantity field
+    session["cart"].append({"id": str(crop_id), "name": crop_name, "price": crop_price, "quantity": 1})
+    session.modified = True
+
+    return jsonify({"success": True, "message": f"{crop_name} added to cart!"})
+
+
+#remove button
+@app.route("/remove_from_cart/<item_id>", methods=["POST"])
+def remove_from_cart(item_id):
+    print(f"Received request to remove item ID: {item_id}")
+
+    if "cart" not in session or not session["cart"]:
+        print("Cart is empty!")
+        return jsonify({"success": False, "message": "Cart is empty!"}), 400
+
+    cart = session["cart"]
+    
+    print("Current Cart:", cart)
+
+    for item in cart:
+        print(f"Checking item: {item}")
+
+        if str(item.get("id")) == str(item_id):  # Convert to string to avoid type mismatch
+            if "quantity" not in item:  # 🔹 Prevent KeyError
+                item["quantity"] = 1  # 🔹 Default to 1 if missing
+
+            item["quantity"] -= 1  # Reduce quantity
+            print(f"Updated quantity for {item['name']}: {item['quantity']}")
+
+            if item["quantity"] <= 0:
+                print(f"Removing item: {item}")
+                cart.remove(item)  # Remove if quantity is zero
+
+            session["cart"] = cart  # Update session
+            session.modified = True
+            print("Updated cart in session:", session["cart"])
+
+            return jsonify({"success": True, "message": f"{item['name']} removed from cart!"})
+
+    print("Item not found in cart!")
+    return jsonify({"success": False, "message": "Item not found in cart!"}), 404
+
+
+# View cart items
+@app.route("/cart")
+def view_cart():
+    cart_items = session.get("cart", [])  # Get cart from session
+    return render_template("cart.html", cart=cart_items)
+
+
 # render home page
-
-
 @ app.route('/')
 def home():
     title = 'Harvestify - Home'

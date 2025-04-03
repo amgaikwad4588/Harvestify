@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Cart</title>
+    <style>
+        /* Global Styling */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        /* Cart Container */
+        .cart-container {
+            background: #ffffff;
+            padding: 20px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+        }
+
+        /* Cart List */
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        li:last-child {
+            border-bottom: none;
+        }
+
+        .item-details {
+            flex: 1;
+        }
+
+        .item-name {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .item-price {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .quantity {
+            font-size: 14px;
+            color: #666;
+        }
+
+        /* Remove Button */
+        .remove-btn {
+            background: #dc3545;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 14px;
+            transition: 0.3s;
+        }
+
+        .remove-btn:hover {
+            background: #c82333;
+        }
+
+        /* Continue Shopping Button */
+        .continue-shopping {
+            display: block;
+            margin-top: 20px;
+            text-align: center;
+            text-decoration: none;
+            background: #007bff;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            transition: 0.3s;
+        }
+
+        .continue-shopping:hover {
+            background: #0056b3;
+        }
+
+        /* Empty Cart Message */
+        .empty-cart {
+            text-align: center;
+            font-size: 18px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Shopping Cart</h1>
+
+    <div class="cart-container">
+        {% if cart %}
+            <ul>
+                {% for item in cart %}
+                    <li>
+                        <div class="item-details">
+                            <span class="item-name">{{ item.name }}</span> -
+                            <span class="item-price">₹{{ item.price }}</span>
+                            <span class="quantity">(Quantity: {{ item.quantity }})</span>
+                        </div>
+                        <script>
+                            function removeFromCart(itemId) {
+                                console.log("Remove button clicked for ID:", itemId); // Debugging
+                        
+                                fetch(`/remove_from_cart/${itemId}`, {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" }
+                                })
+                                .then(response => {
+                                    if (!response.ok) {
+                                        throw new Error(`HTTP error! Status: ${response.status}`);
+                                    }
+                                    return response.json();
+                                })
+                                .then(data => {
+                                    console.log("Server Response:", data); // Debugging
+                                    alert(data.message);  // Show success/error message
+                                    location.reload();  // Refresh the page to update the cart
+                                })
+                                .catch(error => {
+                                    console.error("Error:", error);
+                                    alert("An error occurred while removing the item.");
+                                });
+                            }
+                        </script>
+               <button class="remove-btn" onclick="removeFromCart('{{ item.id|string }}')">Remove</button>
+
+                        
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="empty-cart">Your cart is empty.</p>
+        {% endif %}
+
+        <a href="{{ url_for('marketplace') }}" class="continue-shopping">Continue Shopping</a>
+    </div>
+
+</body>
+</html>
